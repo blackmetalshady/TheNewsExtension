@@ -1,0 +1,8 @@
+{
+  "name": "TechNews",
+  "description": "Extension fetching latest tech news",
+  "uuid": "tech-news@yas.dev",
+  "shell-version": [
+    "46"
+  ]
+}
