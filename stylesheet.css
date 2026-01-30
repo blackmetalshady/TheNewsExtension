@@ -1,1 +1,115 @@
-/* Add your custom extension styling here */
+/* Main Scroll View */
+.news-scroll-view {
+    max-height: 700px;
+    min-width: 500px;
+    max-width: 700px;
+    padding: 4px 0;
+}
+
+/* Article Container (Button) */
+.article-item {
+    padding: 8px 12px;
+    background-color: transparent;
+    border-radius: 6px;
+    margin: 2px 4px;
+    /* Ensure text alignment logic works */
+    text-align: left;
+    margin-top: 0px;
+}
+
+.article-item:hover,
+.article-item:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Layout within Article */
+/* Spacing handled in JS */
+
+/* Image Container */
+.article-image-bin {
+    /* Removed fixed width/height to allow JS to set size preserving aspect ratio */
+    /* We can set a min-width to prevent collapse if image missing */
+    min-width: 60px;
+    min-height: 60px;
+}
+
+/* Image itself */
+.article-image {
+    border-radius: 6px;
+    margin-right: 12px;
+}
+
+/* Placeholder Icon */
+.article-image-placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Typography */
+.article-title {
+    font-weight: 700;
+    font-size: 1.0em;
+    padding-bottom: 2px;
+    color: #ffffff;
+    /* Explicitly white for visibility */
+}
+
+.article-meta {
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Header Styles */
+.header-title {
+    font-weight: 800;
+    font-size: 1.1em;
+    padding-left: 6px;
+}
+
+.refresh-button {
+    padding: 6px;
+    margin-right: 20px;
+    width: 24px;
+    height: 24px;
+    border-radius: 99px;
+    /* Circular */
+    background-color: transparent;
+}
+
+.refresh-button:hover,
+.refresh-button:focus {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.refresh-button:active {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.settings-panel {
+    width: 250px;
+    padding: 10px;
+}
+
+.settings-button {
+    padding: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 99px;
+    /* Circular */
+    background-color: transparent;
+}
+
+.settings-button:hover,
+.settings-button:focus {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.settings-button:active {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.header-timestamp {
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.5);
+    padding-left: 8px;
+    padding-top: 2px;
+}

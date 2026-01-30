@@ -4,5 +4,6 @@
   "uuid": "tech-news@yas.dev",
   "shell-version": [
     "46"
-  ]
+  ],
+  "settings-schema": "org.gnome.shell.extensions.technews"
 }
