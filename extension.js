@@ -14,10 +14,10 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const NEWS_API_URL = 'https://saurav.tech/NewsAPI/top-headlines';
+const NEWS_API_URL = 'https://raw.githubusercontent.com/blackmetalshady/TheNewsExtension/master/data/news_source/';
 
 const CATEGORIES = [
-    { id: 'general', name: 'General' },
+    { id: 'general', name: 'All Categories' },
     { id: 'technology', name: 'Technology' },
     { id: 'business', name: 'Business' },
     { id: 'entertainment', name: 'Entertainment' },
@@ -396,9 +396,12 @@ const Indicator = GObject.registerClass(
             });
             this._settingsPanel.add_child(label);
 
+            this._categoryToggles = {};
+
             let currentCategories = this._settings ? this._settings.get_strv('categories') : ['general'];
-            // Handle case where settings might not be loaded yet or empty defaults
-            if (!this._settings) currentCategories = ['general'];
+            if (!this._settings || !currentCategories || currentCategories.length === 0) {
+                currentCategories = ['general'];
+            }
 
             for (let category of CATEGORIES) {
                 let row = new St.BoxLayout({
@@ -415,12 +418,11 @@ const Indicator = GObject.registerClass(
                 });
                 row.add_child(categoryLabel);
 
-                let isChecked = currentCategories.includes(category.id);
-
                 let toggleIcon = new St.Icon({
-                    icon_name: isChecked ? 'checkbox-checked-symbolic' : 'checkbox-symbolic',
+                    icon_name: 'checkbox-symbolic',
                     style_class: 'popup-menu-icon'
                 });
+                this._categoryToggles[category.id] = toggleIcon;
 
                 let toggleBtn = new St.Button({
                     child: toggleIcon,
@@ -429,21 +431,76 @@ const Indicator = GObject.registerClass(
                     x_align: Clutter.ActorAlign.END
                 });
 
-                // Toggle Logic
                 toggleBtn.connect('clicked', () => {
-                    let current = this._settings.get_strv('categories');
-                    if (current.includes(category.id)) {
-                        current = current.filter(id => id !== category.id);
-                        toggleIcon.icon_name = 'checkbox-symbolic';
-                    } else {
-                        current.push(category.id);
-                        toggleIcon.icon_name = 'checkbox-checked-symbolic';
-                    }
-                    this._settings.set_strv('categories', current);
+                    this._onCategoryToggle(category.id);
                 });
 
                 row.add_child(toggleBtn);
                 this._settingsPanel.add_child(row);
+            }
+
+            this._updateToggles(currentCategories);
+        }
+
+        _onCategoryToggle(clickedId) {
+            let currentCategories = this._settings.get_strv('categories');
+            if (!currentCategories || currentCategories.length === 0) currentCategories = ['general'];
+
+            let allSpecifics = CATEGORIES.filter(c => c.id !== 'general').map(c => c.id);
+            let isDefaultGeneral = (currentCategories.length === 1 && currentCategories[0] === 'general');
+
+            let newSelection = [];
+
+            if (clickedId === 'general') {
+                // If currently All Specifics are selected, uncheck all -> default general
+                let isAllSelected = allSpecifics.every(id => currentCategories.includes(id));
+
+                if (isAllSelected) {
+                    newSelection = ['general'];
+                } else {
+                    // Else select all specifics
+                    newSelection = [...allSpecifics];
+                }
+            } else {
+                let currentSet = new Set(currentCategories);
+                if (isDefaultGeneral) currentSet.clear();
+
+                if (currentSet.has(clickedId)) {
+                    currentSet.delete(clickedId);
+                } else {
+                    currentSet.add(clickedId);
+                }
+                currentSet.delete('general'); // Ensure clean
+
+                newSelection = Array.from(currentSet);
+                if (newSelection.length === 0) newSelection = ['general'];
+            }
+
+            this._settings.set_strv('categories', newSelection);
+            this._updateToggles(newSelection);
+        }
+
+        _updateToggles(currentCategories) {
+            let allSpecifics = CATEGORIES.filter(c => c.id !== 'general').map(c => c.id);
+            let isDefaultGeneral = (currentCategories.length === 0 || (currentCategories.length === 1 && currentCategories[0] === 'general'));
+            let isAllSelected = allSpecifics.every(id => currentCategories.includes(id));
+
+            for (let category of CATEGORIES) {
+                let icon = this._categoryToggles[category.id];
+                if (!icon) continue;
+
+                let shouldCheck = false;
+                if (category.id === 'general') {
+                    shouldCheck = isAllSelected;
+                } else {
+                    if (isDefaultGeneral) {
+                        shouldCheck = false;
+                    } else {
+                        shouldCheck = currentCategories.includes(category.id);
+                    }
+                }
+
+                icon.icon_name = shouldCheck ? 'checkbox-checked-symbolic' : 'checkbox-symbolic';
             }
         }
 
@@ -467,8 +524,8 @@ const Indicator = GObject.registerClass(
 
         _fetchNewsFromSource(category) {
             // NewsAPI requires country when source is not specified.
-            let url = `${NEWS_API_URL}/category/${category.id}/us.json`;
-            console.log(url);
+            let url = `${NEWS_API_URL}/${category.id}.json`;
+            // console.log(url);
             return new Promise((resolve, reject) => {
                 let message = Soup.Message.new('GET', url);
                 // Set User-Agent to avoid 400/403 from some APIs
