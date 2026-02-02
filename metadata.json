@@ -1,13 +1,13 @@
 {
   "name": "TheNewsExtension",
-  "description": "Extension fetching latest news",
-  "uuid": "the-news-extension@yas.dev",
+  "description": "This extensions fetches the latest news in different categories [Business, Entertainment, Health, Science, Sports, Technology] from NewsAPI",
+  "uuid": "the-news-extension@blackmetalshady.github.io",
+  "url": "https://github.com/blackmetalshady/TheNewsExtension",
   "shell-version": [
     "45",
     "46",
     "47",
-    "48",
-    "49"
+    "48"
   ],
   "settings-schema": "org.gnome.shell.extensions.the-news-extension"
 }
