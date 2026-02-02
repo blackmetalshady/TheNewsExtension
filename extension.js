@@ -14,18 +14,8 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const NEWS_API_URL = 'https://raw.githubusercontent.com/blackmetalshady/TheNewsExtension/master/data/news_source/';
+import { NEWS_API_URL, CATEGORIES } from './config.js';
 
-const CATEGORIES = [
-    { id: 'general', name: 'All Categories' },
-    { id: 'technology', name: 'Technology' },
-    { id: 'business', name: 'Business' },
-    { id: 'entertainment', name: 'Entertainment' },
-    { id: 'health', name: 'Health' },
-    { id: 'science', name: 'Science' },
-    { id: 'sports', name: 'Sports' }
-];
-// Helper to create the visual card for an article
 class ArticleCard extends St.Button {
     static {
         GObject.registerClass(this);
@@ -36,13 +26,12 @@ class ArticleCard extends St.Button {
             style_class: 'article-item',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
-            x_align: Clutter.ActorAlign.FILL, // IMPORTANT: Aligns content to fill
+            x_align: Clutter.ActorAlign.FILL,
             reactive: true,
             can_focus: true,
             track_hover: true
         });
 
-        // Hover Hand Cursor
         this.connect('enter-event', () => {
             global.display.set_cursor(Meta.Cursor.POINTING_HAND);
         });
@@ -59,14 +48,12 @@ class ArticleCard extends St.Button {
 
         this.article = article;
 
-        // Main container (Horizontal)
         this._box = new St.BoxLayout({
             style_class: 'article-box',
             x_expand: true
         });
         this.set_child(this._box);
 
-        // Left: Image Bin
         this._iconBin = new St.Bin({
             style_class: 'article-image-bin',
             x_expand: false,
@@ -74,16 +61,14 @@ class ArticleCard extends St.Button {
             y_align: Clutter.ActorAlign.CENTER,
         });
 
-        // Placeholder icon
         this._icon = new St.Icon({
             icon_name: 'image-missing',
-            icon_size: 60, // Slightly larger placeholder
+            icon_size: 60,
             style_class: 'article-image-placeholder'
         });
         this._iconBin.set_child(this._icon);
         this._box.add_child(this._iconBin);
 
-        // Right: Content (Vertical)
         this._contentBox = new St.BoxLayout({
             vertical: true,
             x_expand: true,
@@ -92,23 +77,21 @@ class ArticleCard extends St.Button {
         });
         this._box.add_child(this._contentBox);
 
-        // Title
         let title = this._truncateText(article.title || 'No Title');
         let titleLabel = new St.Label({
             text: title,
             style_class: 'article-title',
-            x_expand: true // Ensure it takes available width
+            x_expand: true
         });
         titleLabel.clutter_text.line_wrap = true;
         titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        titleLabel.clutter_text.maximum_width_chars = 40; // Prevent super wide text breaking layout
+        titleLabel.clutter_text.maximum_width_chars = 40;
         this._contentBox.add_child(titleLabel);
 
-        // Meta: Date | Publisher
         let dateStr = article.publishedAt ? article.publishedAt.split('T')[0] : '';
         let publisher = article.source && article.source.name ? article.source.name : 'Unknown';
         let metaLabel = new St.Label({
-            text: `${dateStr} • ${publisher}`,
+            text: `${dateStr} | ${publisher}`,
             style_class: 'article-meta'
         });
         this._contentBox.add_child(metaLabel);
@@ -119,10 +102,8 @@ class ArticleCard extends St.Button {
         });
         this._contentBox.add_child(descriptionLabel);
 
-        // Initialize with default image
         this._setDefaultImage();
 
-        // Load Image asynchronously
         if (article.urlToImage) {
             this._loadImage(article.urlToImage);
         }
@@ -132,9 +113,8 @@ class ArticleCard extends St.Button {
         if (!this._extensionDir) return;
 
         let imagePath = this._extensionDir.get_child('data').get_child('images').get_child('default.png');
-        let imageUri = imagePath.get_uri(); // Use URI for file loading if needed, or stream
+        let imageUri = imagePath.get_uri();
 
-        // Load local file as stream
         let file = Gio.File.new_for_path(imagePath.get_path());
 
         file.read_async(GLib.PRIORITY_DEFAULT, this._cancellable, (f, res) => {
@@ -144,7 +124,6 @@ class ArticleCard extends St.Button {
                 this._processImageStream(stream, 'local-default-image');
             } catch (e) {
                 console.error('Failed to load default image:', e);
-                // Fallback to icon if file fails
                 this._icon = new St.Icon({
                     icon_name: 'image-missing',
                     icon_size: 60,
@@ -168,15 +147,12 @@ class ArticleCard extends St.Button {
     }
 
     _displayPixbuf(pixbuf) {
-        // Original Aspect Ratio Logic
         let width = pixbuf.get_width();
         let height = pixbuf.get_height();
 
-        // Constraints
         let maxWidth = 100;
         let maxHeight = 70;
 
-        // Calculate scale to FIT within box (Math.min)
         let ratio = Math.min(maxWidth / width, maxHeight / height);
         let newWidth = Math.floor(width * ratio);
         let newHeight = Math.floor(height * ratio);
@@ -231,7 +207,6 @@ class ArticleCard extends St.Button {
 
             } catch (e) {
                 console.error('Image fetch failed:', e);
-                //this._setDefaultImage();
             }
         });
     }
@@ -250,40 +225,33 @@ const Indicator = GObject.registerClass(
 
             this._extension = extension;
 
-            // Load Custom Icon
             let iconPath = extension.dir.get_child('data').get_child('icons').get_child('search-global-symbolic.svg');
             let gicon = new Gio.FileIcon({ file: iconPath });
 
-            // Icon
             this.add_child(new St.Icon({
                 gicon: gicon,
                 style_class: 'system-status-icon',
             }));
 
-            // HTTP Session
             this._session = new Soup.Session();
 
             // --- Menu Layout ---
 
-            // Header Section
             let headerItem = new PopupMenu.PopupBaseMenuItem({
                 reactive: false,
                 can_focus: false,
                 style_class: 'news-header'
             });
 
-            // Allow header to expand
             headerItem.actor.set_x_expand(true);
             headerItem.actor.set_x_align(Clutter.ActorAlign.FILL);
 
-            // Header Layout
             let headerBox = new St.BoxLayout({
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER
             });
             headerItem.add_child(headerBox);
 
-            // Title
             this._titleLabel = new St.Label({
                 text: _('Top Headlines'),
                 style_class: 'header-title',
@@ -292,7 +260,6 @@ const Indicator = GObject.registerClass(
             });
             headerBox.add_child(this._titleLabel);
 
-            // Refresh Button
             this._refreshButton = new St.Button({
                 reactive: true,
                 can_focus: true,
@@ -306,7 +273,6 @@ const Indicator = GObject.registerClass(
                 this._fetchNews();
             });
 
-            // Settings Button
             this._settingsButton = new St.Button({
                 reactive: true,
                 can_focus: true,
@@ -328,7 +294,6 @@ const Indicator = GObject.registerClass(
 
             // --- Main Content Stack ---
 
-            // Scrollable Container Item (Holds the stack)
             this._scrollContainerItem = new PopupMenu.PopupBaseMenuItem({
                 reactive: false,
                 can_focus: false
@@ -337,14 +302,12 @@ const Indicator = GObject.registerClass(
             this._scrollContainerItem.actor.set_x_align(Clutter.ActorAlign.FILL);
             this.menu.addMenuItem(this._scrollContainerItem);
 
-            // We use a BoxLayout to stack News and Settings (showing only one)
             this._mainContent = new St.BoxLayout({
                 vertical: true,
                 x_expand: true
             });
             this._scrollContainerItem.add_child(this._mainContent);
 
-            // News View (ScrollView)
             this._scrollView = new St.ScrollView({
                 style_class: 'news-scroll-view',
                 hscrollbar_policy: St.PolicyType.NEVER,
@@ -354,16 +317,13 @@ const Indicator = GObject.registerClass(
 
             this._newsList = new St.BoxLayout({
                 vertical: true,
-                x_expand: true // Ensure children take full width
+                x_expand: true
             });
 
             this._scrollView.set_child(this._newsList);
             this._mainContent.add_child(this._scrollView);
-
-            // Initialize Settings
             this._settings = extension.getSettings();
 
-            // Settings View (Hidden by default)
             this._settingsPanel = new St.BoxLayout({
                 vertical: true,
                 x_expand: true,
@@ -374,7 +334,6 @@ const Indicator = GObject.registerClass(
             this._mainContent.add_child(this._settingsPanel);
 
 
-            // Fetch on open if empty (only if showing news)
             this.menu.connect('open-state-changed', (menu, open) => {
                 if (open) {
                     if (this._scrollView.visible && this._newsList.get_n_children() === 0) {
@@ -383,16 +342,14 @@ const Indicator = GObject.registerClass(
                 }
             });
 
-            // Initialize fetching state
             this._isFetching = false;
-            // Preload data asynchronously
             this._fetchNews();
         }
 
         _buildSettingsPanel() {
             let label = new St.Label({
                 text: _('Select Categories'),
-                style: 'font-weight: bold; padding-bottom: 10px; font-size: 1.1em;'
+                style_class: 'settings-label',
             });
             this._settingsPanel.add_child(label);
 
@@ -408,7 +365,6 @@ const Indicator = GObject.registerClass(
                     style_class: 'popup-menu-item',
                     reactive: true,
                     can_focus: true,
-                    style: 'padding: 8px 0;'
                 });
 
                 let categoryLabel = new St.Label({
@@ -452,13 +408,11 @@ const Indicator = GObject.registerClass(
             let newSelection = [];
 
             if (clickedId === 'general') {
-                // If currently All Specifics are selected, uncheck all -> default general
                 let isAllSelected = allSpecifics.every(id => currentCategories.includes(id));
 
                 if (isAllSelected) {
                     newSelection = ['general'];
                 } else {
-                    // Else select all specifics
                     newSelection = [...allSpecifics];
                 }
             } else {
@@ -470,7 +424,7 @@ const Indicator = GObject.registerClass(
                 } else {
                     currentSet.add(clickedId);
                 }
-                currentSet.delete('general'); // Ensure clean
+                currentSet.delete('general');
 
                 newSelection = Array.from(currentSet);
                 if (newSelection.length === 0) newSelection = ['general'];
@@ -512,24 +466,35 @@ const Indicator = GObject.registerClass(
                 this._settingsButton.icon_name = 'preferences-system-symbolic';
                 this._settingsPanel.hide();
                 this._scrollView.show();
-                this._fetchNews();
+                this._refreshButton.show();
+
+                // Check for changes
+                let currentCategories = this._settings ? this._settings.get_strv('categories') : [];
+
+                let initial = (this._initialCategories || []).slice().sort();
+                let current = (currentCategories || []).slice().sort();
+
+                let changed = initial.length !== current.length || !initial.every((val, index) => val === current[index]);
+
+                if (changed || (this._newsList && this._newsList.get_n_children() === 0)) {
+                    this._fetchNews();
+                }
             } else {
                 // Switch to Settings
+                this._initialCategories = this._settings ? this._settings.get_strv('categories') : [];
                 this._scrollView.hide();
                 this._settingsPanel.show();
+                this._refreshButton.hide();
                 this._titleLabel.text = _('Settings');
                 this._settingsButton.icon_name = 'go-previous-symbolic';
             }
         }
 
         _fetchNewsFromSource(category) {
-            // NewsAPI requires country when source is not specified.
             let url = `${NEWS_API_URL}/${category.id}.json`;
-            // console.log(url);
             return new Promise((resolve, reject) => {
                 let message = Soup.Message.new('GET', url);
-                // Set User-Agent to avoid 400/403 from some APIs
-                message.request_headers.append('User-Agent', 'gnome-shell-extension-technews/1.0');
+                message.request_headers.append('User-Agent', 'gnome-shell-extension-the-news-extension/1.0');
 
                 this._session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
                     try {
@@ -560,23 +525,17 @@ const Indicator = GObject.registerClass(
 
                 let loadingLabel = new St.Label({
                     text: _('Loading...'),
-                    style: 'padding: 10px; opacity: 0.7;'
+                    style_class: 'loading-label',
                 });
                 this._newsList.add_child(loadingLabel);
 
-                // Read 'categories' setting instead of 'sources'
                 let selectedCategoryIds = this._settings ? this._settings.get_strv('categories') : [];
-                console.log(`[TechNews] Raw settings categories: ${JSON.stringify(selectedCategoryIds)}`);
 
-                // Default to 'general' if empty or not set
                 if (!selectedCategoryIds || selectedCategoryIds.length === 0) {
-                    console.log('[TheNews] Categories empty, defaulting to general');
                     selectedCategoryIds = ['general'];
                 }
 
-                // Filter CATEGORIES objects based on saved IDs
                 let categoriesToFetch = CATEGORIES.filter(c => selectedCategoryIds.includes(c.id));
-                console.log(`[TechNews] Fetching categories: ${categoriesToFetch.map(c => c.id).join(', ')}`);
 
                 if (categoriesToFetch.length === 0) {
                     this._newsList.destroy_all_children();
@@ -585,15 +544,12 @@ const Indicator = GObject.registerClass(
                 }
 
                 try {
-                    // Fetch selected categories in parallel
                     let results = await Promise.all(categoriesToFetch.map(category => this._fetchNewsFromSource(category)));
 
-                    // Flatten and Sort
                     let allArticles = results.flat();
-                    // Filter out invalid dates or sort
                     allArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
 
-                    if (!this._newsList) return; // In case destroyed during fetch
+                    if (!this._newsList) return;
                     this._newsList.destroy_all_children();
 
                     if (allArticles.length === 0) {
@@ -604,7 +560,6 @@ const Indicator = GObject.registerClass(
                     }
 
                     for (let article of allArticles) {
-                        // Pass extension directory to ArticleCard
                         let card = new ArticleCard(article, this._extension.dir);
                         card.connect('clicked', () => {
                             this.menu.close();
@@ -637,7 +592,7 @@ const Indicator = GObject.registerClass(
         }
     });
 
-export default class TechNewsExtension extends Extension {
+export default class TheNewsExtension extends Extension {
     enable() {
         this._indicator = new Indicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);

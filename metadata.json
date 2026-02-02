@@ -1,9 +1,13 @@
 {
-  "name": "TechNews",
-  "description": "Extension fetching latest tech news",
-  "uuid": "tech-news@yas.dev",
+  "name": "TheNewsExtension",
+  "description": "Extension fetching latest news",
+  "uuid": "the-news-extension@yas.dev",
   "shell-version": [
-    "46"
+    "45",
+    "46",
+    "47",
+    "48",
+    "49"
   ],
-  "settings-schema": "org.gnome.shell.extensions.technews"
+  "settings-schema": "org.gnome.shell.extensions.the-news-extension"
 }

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <schema id="org.gnome.shell.extensions.technews" path="/org/gnome/shell/extensions/technews/">
+  <schema id="org.gnome.shell.extensions.the-news-extension" path="/org/gnome/shell/extensions/the-news-extension/">
     <key name="sources" type="as">
-      <default>['the-verge', 'wired', 'techcrunch']</default>
+      <default>['news-api']</default>
       <summary>Enabled News Sources</summary>
       <description>List of enabled news source IDs to fetch articles from.</description>
     </key>
