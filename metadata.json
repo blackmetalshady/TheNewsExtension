@@ -9,5 +9,8 @@
     "47",
     "48"
   ],
-  "settings-schema": "org.gnome.shell.extensions.the-news-extension"
+  "settings-schema": "org.gnome.shell.extensions.the-news-extension",
+  "donations": {
+    "github": "blackmetalshady"
+  }
 }

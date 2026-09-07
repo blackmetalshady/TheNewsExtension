@@ -1,6 +1,6 @@
 import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
-import Soup from 'gi://Soup?version=3.0';
+import Soup from 'gi://Soup';
 import Gio from 'gi://Gio';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
@@ -42,8 +42,13 @@ class ArticleCard extends St.Button {
         this._extensionDir = extensionDir;
 
         this._cancellable = new Gio.Cancellable();
+        this._session = new Soup.Session();
         this.connect('destroy', () => {
             this._cancellable.cancel();
+            if (this._session) {
+                this._session.abort();
+                this._session = null;
+            }
         });
 
         this.article = article;
@@ -180,10 +185,10 @@ class ArticleCard extends St.Button {
     }
 
     _loadImage(url) {
-        let session = new Soup.Session();
+        if (!this._session) return;
         let message = Soup.Message.new('GET', url);
 
-        session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, this._cancellable, (sess, result) => {
+        this._session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, this._cancellable, (sess, result) => {
             if (this._cancellable.is_cancelled()) return;
             try {
                 let bytes = sess.send_and_read_finish(result);
