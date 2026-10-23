@@ -32,12 +32,16 @@ class ArticleCard extends St.Button {
             track_hover: true
         });
 
-        this.connect('enter-event', () => {
-            global.display.set_cursor(Meta.Cursor.POINTING_HAND);
-        });
-        this.connect('leave-event', () => {
-            global.display.set_cursor(Meta.Cursor.DEFAULT);
-        });
+        if (this.set_cursor_type && Clutter.CursorType) {
+            this.set_cursor_type(Clutter.CursorType.POINTER);
+        } else if (global.display?.set_cursor && Meta.Cursor) {
+            this.connect('enter-event', () => {
+                global.display.set_cursor(Meta.Cursor.POINTING_HAND);
+            });
+            this.connect('leave-event', () => {
+                global.display.set_cursor(Meta.Cursor.DEFAULT);
+            });
+        }
 
         this._extensionDir = extensionDir;
 
@@ -75,7 +79,9 @@ class ArticleCard extends St.Button {
         this._box.add_child(this._iconBin);
 
         this._contentBox = new St.BoxLayout({
-            vertical: true,
+            ...('orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.VERTICAL }
+                : { vertical: true }),
             x_expand: true,
             style_class: 'article-content-box',
             y_align: Clutter.ActorAlign.CENTER
@@ -164,14 +170,33 @@ class ArticleCard extends St.Button {
 
         let scaled = pixbuf.scale_simple(newWidth, newHeight, GdkPixbuf.InterpType.BILINEAR);
 
-        let imageContent = new Clutter.Image();
-        let success = imageContent.set_data(
-            scaled.get_pixels(),
-            scaled.get_has_alpha() ? Cogl.PixelFormat.RGBA_8888 : Cogl.PixelFormat.RGB_888,
+        let imageContent = St.ImageContent.new_with_preferred_size(
             scaled.get_width(),
-            scaled.get_height(),
-            scaled.get_rowstride()
+            scaled.get_height()
         );
+        let pixelFormat = scaled.get_has_alpha()
+            ? Cogl.PixelFormat.RGBA_8888
+            : Cogl.PixelFormat.RGB_888;
+        let success;
+        if (imageContent.set_bytes.length === 6) {
+            let coglContext = global.stage.context.get_backend().get_cogl_context();
+            success = imageContent.set_bytes(
+                coglContext,
+                scaled.read_pixel_bytes(),
+                pixelFormat,
+                scaled.get_width(),
+                scaled.get_height(),
+                scaled.get_rowstride()
+            );
+        } else {
+            success = imageContent.set_bytes(
+                scaled.read_pixel_bytes(),
+                pixelFormat,
+                scaled.get_width(),
+                scaled.get_height(),
+                scaled.get_rowstride()
+            );
+        }
 
         if (success && this._iconBin && this._iconBin.get_parent()) {
             let texture = new St.Widget({
@@ -248,8 +273,8 @@ const Indicator = GObject.registerClass(
                 style_class: 'news-header'
             });
 
-            headerItem.actor.set_x_expand(true);
-            headerItem.actor.set_x_align(Clutter.ActorAlign.FILL);
+            headerItem.set_x_expand(true);
+            headerItem.set_x_align(Clutter.ActorAlign.FILL);
 
             let headerBox = new St.BoxLayout({
                 x_expand: true,
@@ -303,12 +328,16 @@ const Indicator = GObject.registerClass(
                 reactive: false,
                 can_focus: false
             });
-            this._scrollContainerItem.actor.set_x_expand(true);
-            this._scrollContainerItem.actor.set_x_align(Clutter.ActorAlign.FILL);
+            this._scrollContainerItem.set_x_expand(true);
+            this._scrollContainerItem.set_x_align(Clutter.ActorAlign.FILL);
             this.menu.addMenuItem(this._scrollContainerItem);
 
+            let verticalProp = 'orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.VERTICAL }
+                : { vertical: true };
+
             this._mainContent = new St.BoxLayout({
-                vertical: true,
+                ...verticalProp,
                 x_expand: true
             });
             this._scrollContainerItem.add_child(this._mainContent);
@@ -321,7 +350,7 @@ const Indicator = GObject.registerClass(
             });
 
             this._newsList = new St.BoxLayout({
-                vertical: true,
+                ...verticalProp,
                 x_expand: true
             });
 
@@ -330,7 +359,7 @@ const Indicator = GObject.registerClass(
             this._settings = extension.getSettings();
 
             this._settingsPanel = new St.BoxLayout({
-                vertical: true,
+                ...verticalProp,
                 x_expand: true,
                 visible: false,
                 style_class: 'settings-panel'
